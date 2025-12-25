@@ -8,8 +8,8 @@ class PaginatedList
 {
     public function __Construct(protected RewardService $service) { }
 
-    public function __invoke(int $perPage  = 25)
+    public function __invoke(int $perPage = 25, ?array $sort = null)
     {
-        return $this->service->index($perPage);
+        return $this->service->index($perPage, $sort);
     }
 }

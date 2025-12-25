@@ -23,8 +23,10 @@ class RewardController extends Controller
             'Rewards/Index',
             [
                 'rewards' => IndexResource::collection($list(
-                    perPage: $request->get('perPage', 25)
+                    perPage: $request->get('perPage', 25),
+                    sort: $request->get('sort')
                 )),
+                'sort' => $request->get('sort') ?? [],
             ]
         );
     }

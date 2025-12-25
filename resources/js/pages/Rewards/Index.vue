@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import SortModal, { type SortField } from '@/components/SortModal.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { ArrowUpDown } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -13,7 +15,16 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const props = defineProps<{
     rewards: any;
+    sort: Record<string, string>;
 }>();
+
+const isSortModalOpen = ref(false);
+const sortFields: SortField[] = [
+    { key: 'name', label: 'Name' },
+    { key: 'code', label: 'Code' },
+    { key: 'points', label: 'Points' },
+    { key: 'created_at', label: 'Date Created' },
+];
 
 const getLogoUrl = (logoFile: any): string => {
     if (logoFile?.file_path) {
@@ -41,8 +52,25 @@ const pages = computed(() => {
 
 function goToPage(page: number) {
     if (!page || page < 1 || page === currentPage.value || page > lastPage.value) return;
-    router.get(window.location.pathname, { page }, { preserveState: true });
+    const params: Record<string, any> = { page };
+    if (props.sort && Object.keys(props.sort).length > 0) {
+        params.sort = props.sort;
+    }
+
+    router.get(window.location.pathname, params, { preserveState: true });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function handleSortApply(sorts: Array<{ field: string; order: 'asc' | 'desc' }>) {
+    const sortParams: Record<string, string> = {};
+    sorts.forEach(s => {
+        sortParams[s.field] = s.order.toUpperCase();
+    });
+
+    router.get(
+        window.location.pathname,
+        { page: 1, ...Object.keys(sortParams).length > 0 ? { sort: sortParams } : {} }
+    );
 }
 
 </script>
@@ -59,9 +87,18 @@ function goToPage(page: number) {
                     <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Rewards</h1>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage your rewards</p>
                 </div>
-                <a href="/rewards/create" class="px-6 py-2 border border-sidebar-border/70 hover:bg-gray-50/10 cursor-pointer text-white font-medium rounded-lg transition">
-                    + Create Reward
-                </a>
+                <div class="flex items-center gap-3">
+                    <button
+                        @click="isSortModalOpen = true"
+                        class="px-4 py-2 border border-sidebar-border/70 hover:bg-gray-50/10 cursor-pointer text-white font-medium rounded-lg transition inline-flex items-center gap-2"
+                    >
+                        <ArrowUpDown class="w-4 h-4" />
+                        Sort
+                    </button>
+                    <a href="/rewards/create" class="px-6 py-2 border border-sidebar-border/70 hover:bg-gray-50/10 cursor-pointer text-white font-medium rounded-lg transition">
+                        + Create Reward
+                    </a>
+                </div>
             </div>
             <div
                 class="relative min-h-screen flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border overflow-hidden"
@@ -81,7 +118,7 @@ function goToPage(page: number) {
                             <!-- Logo + Name + Code + Points -->
                             <td class="px-6 py-5">
                                 <div class="flex items-center gap-4">
-                                    <img :src="getLogoUrl(reward.logoFile)" :alt="reward.name" class="w-14 h-14 rounded object-cover flex-shrink-0" />
+                                    <img :src="getLogoUrl(reward.logoFile)" :alt="reward.name" class="w-14 h-14 rounded object-cover shrink-0" />
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center justify-between gap-4">
                                             <span class="font-semibold text-gray-900 dark:text-white uppercase truncate">{{ reward.name }}</span>
@@ -141,4 +178,13 @@ function goToPage(page: number) {
             </div>
         </div>
     </AppLayout>
+
+    <!-- Sort Modal -->
+    <SortModal
+        :is-open="isSortModalOpen"
+        :fields="sortFields"
+        :initial-sort="props.sort"
+        @close="isSortModalOpen = false"
+        @apply="handleSortApply"
+    />
 </template>

@@ -9,11 +9,26 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class RewardService
 {
-    public function index(int $page): LengthAwarePaginator
+    public function index(int $page, ?array $sort = null): LengthAwarePaginator
     {
-        return Reward::latest()
-            ->with('logoFile')
-            ->paginate($page)
+        // Start with a base query; don't apply `latest()` yet because that would
+        // insert an `order by created_at desc` which overrides requested sorts.
+        $query = Reward::query()->with('logoFile');
+
+        // Apply sorting if provided (expected format: ['name' => 'ASC', 'created_at' => 'DESC'])
+        if ($sort && is_array($sort) && count($sort) > 0) {
+            $allowedFields = ['name', 'code', 'points', 'created_at'];
+            foreach ($sort as $field => $direction) {
+                if (in_array($field, $allowedFields)) {
+                    $query->orderBy($field, strtoupper($direction) === 'DESC' ? 'desc' : 'asc');
+                }
+            }
+        } else {
+            // No explicit sorts provided — fallback to latest
+            $query->latest();
+        }
+
+        return $query->paginate($page)
             ->withQueryString();
     }
 
